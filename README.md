@@ -179,8 +179,7 @@ transit-agent/
 │   ├── start.sh                 ← Convenience launcher
 │   └── vercel.json              ← Vercel deployment config
 ├── build.sh                     ← Compile TS → bundled JS
-├── .env.example                 ← API key template
-└── TODO.md                      ← Known issues and future work
+└── .env.example                 ← API key template
 ```
 
 ## API Keys
