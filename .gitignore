@@ -1,5 +1,5 @@
 node_modules/
-transit/scripts/*.js
+# transit/scripts/*.js — committed so managed agent containers can clone and run directly
 transit.zip
 *.tsbuildinfo
 .env
