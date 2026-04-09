@@ -56,12 +56,6 @@ function loadTransitKeys(): Record<string, string> {
   return keys;
 }
 
-function buildEnvSetupCommand(keys: Record<string, string>): string {
-  const exports = Object.entries(keys)
-    .map(([k, v]) => `export ${k}="${v}"`)
-    .join(' && ');
-  return exports || 'true';
-}
 
 async function createSession(config: { agent_id: string; environment_id: string }) {
   return client.beta.sessions.create({
@@ -114,47 +108,44 @@ async function main() {
   const session = await createSession(config);
   console.log(`Session: ${session.id}\n`);
 
-  // Bootstrap: upload transit scripts and set env vars
-  const bootstrapParts: string[] = [];
+  // Bootstrap: inject API keys into the container's shell profile.
+  // Transit scripts and references are pre-loaded via the skill — no file upload needed.
+  const keyEntries = Object.entries(keys);
+  const bootstrapLines = [
+    'You are starting a new Transit agent session. Set up the environment:',
+    '',
+  ];
 
-  // Set API keys as env vars
-  const envCmd = buildEnvSetupCommand(keys);
-  if (envCmd !== 'true') {
-    bootstrapParts.push(
-      `Set these environment variables in your shell before running transit scripts:\n\`\`\`bash\n${envCmd}\n\`\`\``,
+  if (keyEntries.length > 0) {
+    bootstrapLines.push(
+      '1. Set these environment variables in your shell profile so they persist across bash calls:',
+      '',
+      '```bash',
+      `cat >> ~/.bashrc << 'ENVEOF'`,
+      ...keyEntries.map(([k, v]) => `export ${k}="${v}"`),
+      'ENVEOF',
+      'source ~/.bashrc',
+      '```',
+    );
+  } else {
+    bootstrapLines.push(
+      '1. No API keys are configured. CapMetro (Austin), MTA subway (NYC), TfL (London), and CTA alerts will work without keys.',
     );
   }
 
-  // Upload transit scripts and references
-  const transitDir = path.join(import.meta.dirname, '..', 'transit');
-  if (fs.existsSync(transitDir)) {
-    bootstrapParts.push(
-      'The transit skill files (scripts and reference docs) need to be available in the working directory. ' +
-      'I will provide them to you via file writes in the first turn.',
-    );
-  }
-
-  // First message: bootstrap the environment
-  const bootstrapMsg = [
-    'You are starting a new Transit agent session. Before taking any user queries, set up the environment:',
+  bootstrapLines.push(
     '',
-    '1. Write the transit scripts and reference docs to the working directory (I will provide them).',
-    '2. Set the following environment variables in your shell profile so they persist across bash calls:',
+    '2. The transit skill files (scripts/ and references/) are pre-loaded in your working directory.',
+    '   Find the scripts with: `find / -name "capmetro_arrivals.js" 2>/dev/null` then note the path.',
+    '   Use `node --use-env-proxy <path>/scripts/<agency>_arrivals.js` for all script calls.',
     '',
-    '```bash',
-    `cat >> ~/.bashrc << 'ENVEOF'`,
-    ...Object.entries(keys).map(([k, v]) => `export ${k}="${v}"`),
-    'ENVEOF',
-    'source ~/.bashrc',
-    '```',
+    '3. Verify scripts work by running one quick command (e.g. TfL status or CTA alerts).',
     '',
-    '3. Run `node transit/scripts/cta_arrivals.js refresh-gtfs` to verify the scripts work (this downloads CTA GTFS data).',
-    '',
-    'Once setup is complete, respond with a brief ready message listing which cities have API keys configured.',
-  ].join('\n');
+    'Once setup is complete, respond with a brief ready message listing which cities are available and which have API keys configured.',
+  );
 
   console.log('Bootstrapping environment...');
-  await sendAndStream(session.id, bootstrapMsg);
+  await sendAndStream(session.id, bootstrapLines.join('\n'));
 
   // Interactive loop
   const query = process.argv[2];

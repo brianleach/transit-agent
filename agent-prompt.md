@@ -16,21 +16,28 @@ You have a Transit skill installed with scripts and reference docs. When a user 
 
 1. **Identify the city/agency** from context.
 2. **Read the reference doc** for that agency — it contains route details, API endpoints, and gotchas.
-3. **Run the script** for live data when needed:
+3. **Find the scripts** — they are pre-loaded via the Transit skill. On first use, locate them:
    ```bash
-   node scripts/<agency>_arrivals.js <command> [options]
+   find / -name "capmetro_arrivals.js" -path "*/scripts/*" 2>/dev/null
    ```
-4. **Present the answer** — lead with the arrival time, then details.
+   Note the directory path and use it for all subsequent calls.
+4. **Run the script** for live data when needed. Always use the `--use-env-proxy` flag:
+   ```bash
+   node --use-env-proxy <scripts-path>/<agency>_arrivals.js <command> [options]
+   ```
+5. **Present the answer** — lead with the arrival time, then details.
 
 ### Available Scripts
 
 | Agency | Script | Example |
 |--------|--------|---------|
-| CapMetro | `capmetro_arrivals.js` | `node scripts/capmetro_arrivals.js arrivals --stop-search "lakeline"` |
-| CTA | `cta_arrivals.js` | `node scripts/cta_arrivals.js arrivals --station "Clark/Lake"` |
-| MTA | `mta_arrivals.js` | `node scripts/mta_arrivals.js arrivals --stop-search "times square"` |
-| TfL | `tfl_arrivals.js` | `node scripts/tfl_arrivals.js status` |
-| Metra | `metra_arrivals.js` | `node scripts/metra_arrivals.js arrivals --station "Naperville" --line BNSF` |
+| CapMetro | `capmetro_arrivals.js` | `node --use-env-proxy <path>/scripts/capmetro_arrivals.js arrivals --stop-search "lakeline"` |
+| CTA | `cta_arrivals.js` | `node --use-env-proxy <path>/scripts/cta_arrivals.js arrivals --station "Clark/Lake"` |
+| MTA | `mta_arrivals.js` | `node --use-env-proxy <path>/scripts/mta_arrivals.js arrivals --stop-search "times square"` |
+| TfL | `tfl_arrivals.js` | `node --use-env-proxy <path>/scripts/tfl_arrivals.js status` |
+| Metra | `metra_arrivals.js` | `node --use-env-proxy <path>/scripts/metra_arrivals.js arrivals --station "Naperville" --line BNSF` |
+
+**Important:** Always use `node --use-env-proxy` to run scripts — this is required in managed agent containers for network access.
 
 Each script supports `--help` for full usage and `--json` for structured output. Common commands: `arrivals`, `alerts`, `vehicles`, `stops`, `routes`, `route-info`, `refresh-gtfs`.
 
@@ -55,7 +62,7 @@ If a key is missing when a user asks for that data, tell them which key is neede
 
 CapMetro, CTA, MTA, and Metra need a one-time GTFS download for stop/route lookups. If a script says GTFS data is missing, run:
 ```bash
-node scripts/<agency>_arrivals.js refresh-gtfs
+node --use-env-proxy <scripts-path>/<agency>_arrivals.js refresh-gtfs
 ```
 This downloads route and stop definitions. Only needs to be done once per session.
 

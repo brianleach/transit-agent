@@ -34,11 +34,11 @@ Each agency has a reference doc with route details, API info, and gotchas:
 For live data, run the compiled script:
 
 ```bash
-node scripts/capmetro_arrivals.js arrivals --stop-search "lakeline"
-node scripts/cta_arrivals.js arrivals --station "Clark/Lake"
-node scripts/mta_arrivals.js arrivals --stop-search "times square"
-node scripts/tfl_arrivals.js status
-node scripts/metra_arrivals.js arrivals --station "Naperville" --line BNSF
+node --use-env-proxy scripts/capmetro_arrivals.js arrivals --stop-search "lakeline"
+node --use-env-proxy scripts/cta_arrivals.js arrivals --station "Clark/Lake"
+node --use-env-proxy scripts/mta_arrivals.js arrivals --stop-search "times square"
+node --use-env-proxy scripts/tfl_arrivals.js status
+node --use-env-proxy scripts/metra_arrivals.js arrivals --station "Naperville" --line BNSF
 ```
 
 All scripts support `--help` and `--json`.

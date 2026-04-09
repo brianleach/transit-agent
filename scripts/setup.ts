@@ -1,11 +1,15 @@
 /**
- * Setup script: creates the Transit agent and environment on Claude Managed Agents.
+ * Setup script: creates the Transit skill, agent, and environment on Claude Managed Agents.
  *
  * Run once:  bun run setup
- * Outputs:   agent ID, environment ID — save these for creating sessions.
+ * Outputs:   skill ID, agent ID, environment ID — saved to .transit-agent.json
+ *
+ * The skill bundles transit/SKILL.md + transit/scripts/* + transit/references/*
+ * so the agent container has everything pre-loaded — no git clone bootstrap needed.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { toFile } from '@anthropic-ai/sdk/uploads';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -35,20 +39,66 @@ const TRANSIT_API_HOSTS = [
   'schedules.metrarail.com',           // Metra GTFS static
 ];
 
+// ---------------------------------------------------------------------------
+// Collect transit skill files for upload
+// ---------------------------------------------------------------------------
+function collectSkillFiles(transitDir: string): { relativePath: string; absolutePath: string }[] {
+  const files: { relativePath: string; absolutePath: string }[] = [];
+
+  function walk(dir: string) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const abs = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(abs);
+      } else {
+        // Relative path keeps "transit/" prefix so the skill directory is preserved
+        files.push({
+          relativePath: path.relative(path.dirname(transitDir), abs),
+          absolutePath: abs,
+        });
+      }
+    }
+  }
+
+  walk(transitDir);
+  return files;
+}
+
 async function main() {
   console.log('=== Transit Agent Setup ===\n');
 
-  // 1. Create the agent
+  const transitDir = path.join(import.meta.dirname, '..', 'transit');
+
+  // 1. Create the skill from the transit/ directory
+  console.log('Creating skill from transit/ directory...');
+  const skillFiles = collectSkillFiles(transitDir);
+  console.log(`  Found ${skillFiles.length} files to upload`);
+
+  const uploadables = await Promise.all(
+    skillFiles.map(async (f) => {
+      const content = fs.readFileSync(f.absolutePath);
+      return toFile(content, f.relativePath);
+    }),
+  );
+
+  const skill = await client.beta.skills.create({
+    display_title: 'Transit',
+    files: uploadables,
+  });
+  console.log(`  Skill ID: ${skill.id} (version ${skill.latest_version})`);
+
+  // 2. Create the agent with the skill attached
   console.log('Creating agent...');
   const agent = await client.beta.agents.create({
     name: 'Transit',
     model: 'claude-sonnet-4-6',
     system: SYSTEM_PROMPT,
     tools: [{ type: 'agent_toolset_20260401' }],
+    skills: [{ type: 'custom', skill_id: skill.id }],
   });
   console.log(`  Agent ID: ${agent.id} (version ${agent.version})`);
 
-  // 2. Create the environment
+  // 3. Create the environment
   console.log('Creating environment...');
   const environment = await client.beta.environments.create({
     name: 'transit-env',
@@ -67,8 +117,10 @@ async function main() {
   });
   console.log(`  Environment ID: ${environment.id}`);
 
-  // 3. Save IDs for later use
+  // 4. Save IDs for later use
   const config = {
+    skill_id: skill.id,
+    skill_version: skill.latest_version,
     agent_id: agent.id,
     agent_version: agent.version,
     environment_id: environment.id,
