@@ -1,0 +1,27 @@
+{
+  "name": "transit-agent",
+  "version": "1.0.0",
+  "description": "Multi-city public transit agent powered by Claude Managed Agents — real-time arrivals, alerts, and route info for Austin, Chicago, NYC, and London.",
+  "type": "module",
+  "scripts": {
+    "build": "./build.sh",
+    "typecheck": "tsc --noEmit",
+    "setup": "tsx scripts/setup.ts",
+    "session": "tsx scripts/session.ts",
+    "demo": "tsx scripts/demo.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brianleach/transit-agent.git"
+  },
+  "author": "Brian Leach",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "protobufjs": "^7.4.0"
+  }
+}

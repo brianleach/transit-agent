@@ -1,0 +1,8 @@
+node_modules/
+transit/scripts/*.js
+transit.zip
+*.tsbuildinfo
+.env
+.env.local
+.transit-agent.json
+dist/
