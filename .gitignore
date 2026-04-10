@@ -7,6 +7,5 @@ transit.zip
 .env.vercel
 .transit-agent.json
 dist/
-blog-post.md
 mcp-server/.vercel/
 mcp-server/node_modules/
