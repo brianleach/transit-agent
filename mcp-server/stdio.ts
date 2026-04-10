@@ -111,7 +111,11 @@ async function queryTransitAgent(question: string): Promise<string> {
     question,
   );
 
-  return sendAndCollect(session.id, parts.join('\n'));
+  try {
+    return await sendAndCollect(session.id, parts.join('\n'));
+  } finally {
+    await anthropic.beta.sessions.delete(session.id).catch(() => {});
+  }
 }
 
 // ---------------------------------------------------------------------------

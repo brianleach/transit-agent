@@ -61,7 +61,11 @@ async function queryTransitAgent(question: string): Promise<string> {
   }
 
   // Send the actual question
-  return sendAndCollect(session.id, question);
+  try {
+    return await sendAndCollect(session.id, question);
+  } finally {
+    await anthropic.beta.sessions.delete(session.id).catch(() => {});
+  }
 }
 
 /**

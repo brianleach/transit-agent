@@ -97,6 +97,15 @@ async function sendAndStream(sessionId: string, text: string): Promise<void> {
   }
 }
 
+async function deleteSession(sessionId: string) {
+  try {
+    await client.beta.sessions.delete(sessionId);
+    console.log('\nSession deleted.');
+  } catch {
+    // Session may already be gone — ignore
+  }
+}
+
 async function main() {
   const config = loadConfig();
   const keys = loadTransitKeys();
@@ -107,6 +116,11 @@ async function main() {
   // Create session
   const session = await createSession(config);
   console.log(`Session: ${session.id}\n`);
+
+  // Clean up session on exit
+  const cleanup = () => deleteSession(session.id).then(() => process.exit(0));
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
 
   // Bootstrap: inject API keys into the container's shell profile.
   // Transit scripts and references are pre-loaded via the skill — no file upload needed.
@@ -152,6 +166,7 @@ async function main() {
   if (query) {
     // One-shot mode
     await sendAndStream(session.id, query);
+    await deleteSession(session.id);
   } else {
     // Interactive REPL
     const rl = readline.createInterface({
@@ -163,8 +178,8 @@ async function main() {
       rl.question('\n> ', async (input) => {
         const trimmed = input.trim();
         if (!trimmed || trimmed === 'exit' || trimmed === 'quit') {
-          console.log('Ending session.');
           rl.close();
+          await deleteSession(session.id);
           return;
         }
         await sendAndStream(session.id, trimmed);
