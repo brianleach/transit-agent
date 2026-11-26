@@ -6,6 +6,7 @@
   "scripts": {
     "build": "./build.sh",
     "typecheck": "tsc --noEmit",
+    "test": "bun test tests/",
     "setup": "tsx scripts/setup.ts",
     "session": "tsx scripts/session.ts",
     "demo": "tsx scripts/demo.ts"
