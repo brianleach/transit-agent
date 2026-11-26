@@ -116,12 +116,15 @@ vercel env add TRANSIT_AGENT_ID production      # from .transit-agent.json
 vercel env add TRANSIT_ENVIRONMENT_ID production # from .transit-agent.json
 vercel env add CTA_TRAIN_API_KEY production      # optional
 vercel env add CTA_BUS_API_KEY production        # optional
+vercel env add TRANSIT_AGENT_BRIDGE_TOKEN production # required, 32+ random characters
 
 # Redeploy to pick up env vars
 vercel --prod
 ```
 
 Then in claude.ai: **Settings → Connectors → Add custom connector** → enter `https://<your-app>.vercel.app/mcp`
+
+> **Bridge auth (fail closed).** The HTTP bridge (the Vercel function and `server.ts`) requires `Authorization: Bearer <token>` matching `TRANSIT_AGENT_BRIDGE_TOKEN`. If that variable is unset or shorter than 32 characters, every request gets 503; a missing or wrong token gets 401. The bridge sends no CORS headers. The stdio transport (Option B) does not need the token.
 
 #### Option B: Claude Desktop (local)
 
@@ -145,7 +148,7 @@ Restart Claude Desktop and the `ask_transit` tool will be available in conversat
 ```bash
 ./start.sh        # Loads config from ../.transit-agent.json and ../.env
 # or
-PORT=8787 bun run server.ts
+TRANSIT_AGENT_BRIDGE_TOKEN=<32+ chars> PORT=8787 bun run server.ts
 ```
 
 ### Latency Note
