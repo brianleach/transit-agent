@@ -1,3 +1,5 @@
+import { safeUrl } from './url.js';
+
 // Embedded GTFS-Realtime proto schema (avoids needing .proto file at runtime)
 const GTFS_RT_PROTO = `
 syntax = "proto2";
@@ -172,7 +174,7 @@ export async function parsePb(url: string, root?: any): Promise<any> {
   const pbRoot = root ?? (await getProtobufRoot());
   const FeedMessage = pbRoot.lookupType('transit_realtime.FeedMessage');
   const resp = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${url}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${safeUrl(url)}`);
   const buf = Buffer.from(await resp.arrayBuffer());
   if (buf.length > 0 && buf[0] === 0x3c) {
     throw new Error(
@@ -193,7 +195,7 @@ export async function parsePbWithAuth(
     signal: AbortSignal.timeout(30_000),
     headers: { Authorization: authHeader },
   });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${url}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${safeUrl(url)}`);
   const buf = Buffer.from(await resp.arrayBuffer());
   if (buf.length > 0 && buf[0] === 0x3c) {
     throw new Error(

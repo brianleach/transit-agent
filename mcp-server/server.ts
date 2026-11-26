@@ -12,6 +12,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { z } from 'zod';
+import { withBridgeAuth, BRIDGE_TOKEN_ENV, MIN_TOKEN_LENGTH } from './auth.js';
 
 // ---------------------------------------------------------------------------
 // Config from environment
@@ -140,7 +141,7 @@ function createMcpServer(): McpServer {
 // Track transports by session ID for multi-request sessions
 const transports = new Map<string, WebStandardStreamableHTTPServerTransport>();
 
-async function handleRequest(req: Request): Promise<Response> {
+async function routeRequest(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
   // Health check
@@ -180,6 +181,9 @@ async function handleRequest(req: Request): Promise<Response> {
   return new Response('Not found', { status: 404 });
 }
 
+// Every path, /health included, requires the bridge bearer token (see auth.ts).
+const handleRequest = withBridgeAuth(routeRequest);
+
 // ---------------------------------------------------------------------------
 // Start server
 // ---------------------------------------------------------------------------
@@ -187,6 +191,10 @@ if (!AGENT_ID || !ENVIRONMENT_ID) {
   console.error('Missing TRANSIT_AGENT_ID and/or TRANSIT_ENVIRONMENT_ID.');
   console.error('Set these from .transit-agent.json or environment variables.');
   process.exit(1);
+}
+
+if ((process.env[BRIDGE_TOKEN_ENV] ?? '').length < MIN_TOKEN_LENGTH) {
+  console.error(`${BRIDGE_TOKEN_ENV} is unset or shorter than ${MIN_TOKEN_LENGTH} characters: every request will get 503.`);
 }
 
 console.log(`Transit MCP Server starting on port ${PORT}`);

@@ -5,12 +5,14 @@
  * Each invocation is stateless — a new MCP server + transport per request.
  *
  * Add as a custom connector in claude.ai: https://<your-app>.vercel.app/api/mcp
+ * Requires TRANSIT_AGENT_BRIDGE_TOKEN; requests without the matching bearer token are refused.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { z } from 'zod';
+import { withBridgeAuth } from '../auth.js';
 
 // ---------------------------------------------------------------------------
 // Config from Vercel environment variables
@@ -130,7 +132,7 @@ function createMcpServer(): McpServer {
 // ---------------------------------------------------------------------------
 // Vercel handler — stateless, one transport per request
 // ---------------------------------------------------------------------------
-export async function GET(req: Request): Promise<Response> {
+async function handleMcp(req: Request): Promise<Response> {
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless
   });
@@ -139,15 +141,7 @@ export async function GET(req: Request): Promise<Response> {
   return transport.handleRequest(req);
 }
 
-export async function POST(req: Request): Promise<Response> {
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // stateless
-  });
-  const server = createMcpServer();
-  await server.connect(transport);
-  return transport.handleRequest(req);
-}
-
-export async function DELETE(req: Request): Promise<Response> {
-  return new Response(null, { status: 200 });
-}
+// Every method requires the bridge bearer token (see ../auth.ts).
+export const GET = withBridgeAuth(handleMcp);
+export const POST = withBridgeAuth(handleMcp);
+export const DELETE = withBridgeAuth(async () => new Response(null, { status: 200 }));

@@ -53,6 +53,7 @@ import {
   clearCaches,
 } from './client.js';
 import type { MetraLineInfo, FareKey } from './types.js';
+import { safeUrl } from '../shared/url.js';
 
 // ---------------------------------------------------------------------------
 // Protobuf helper (Metra uses Bearer token auth)
@@ -67,7 +68,7 @@ async function parsePb(url: string): Promise<any> {
   if (resp.status === 401 || resp.status === 403) {
     throw new Error('Authentication failed. Check your METRA_API_KEY.');
   }
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${url}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${safeUrl(url)}`);
   // Use shared parsePbWithAuth for the actual decoding; we handle the auth
   // error ourselves above for the specific 401/403 message. Re-fetch would
   // be wasteful, so decode the buffer directly.

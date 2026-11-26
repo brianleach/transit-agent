@@ -15,6 +15,7 @@ import type {
   Station,
   ScoredStation,
 } from './types.js';
+import { safeUrl } from '../shared/url.js';
 
 // ---------------------------------------------------------------------------
 // Load .env
@@ -340,7 +341,7 @@ export function requireBusKey(): boolean {
 /** Fetch JSON with a 30-second timeout. */
 export async function fetchJSON<T = any>(url: string): Promise<T> {
   const resp = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${url}`);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${safeUrl(url)}`);
   return resp.json() as Promise<T>;
 }
 

@@ -9,5 +9,5 @@
     "outDir": "dist",
     "declaration": true
   },
-  "include": ["server.ts", "stdio.ts", "api/mcp.ts"]
+  "include": ["server.ts", "stdio.ts", "auth.ts", "api/mcp.ts"]
 }
